@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='payment',
             name='receipt_code',
-            field=models.CharField(blank=True, db_index=True, default='', max_length=12),
+            field=models.CharField(blank=True, db_index=False, default='', max_length=12),
             preserve_default=False,
         ),
         migrations.RunPython(backfill_codes, noop),

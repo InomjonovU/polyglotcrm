@@ -1,0 +1,25 @@
+[Unit]
+Description=PolyglotLC Celery Worker
+After=network.target redis-server.service postgresql.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=polyglot
+Group=polyglot
+WorkingDirectory=/opt/polyglot_crm/backend
+EnvironmentFile=/opt/polyglot_crm/backend/.env
+ExecStart=/opt/polyglot_crm/backend/venv/bin/celery -A config worker \
+    --loglevel=info \
+    --concurrency=2 \
+    --logfile=/var/log/polyglot/celery.log
+Restart=on-failure
+RestartSec=10
+KillMode=mixed
+TimeoutStopSec=30
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

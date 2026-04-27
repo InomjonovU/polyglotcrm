@@ -10,3 +10,7 @@ redis>=5.0
 reportlab>=4.2
 openpyxl>=3.1
 requests>=2.32
+# Production
+gunicorn>=22.0
+psycopg[binary]>=3.2
+whitenoise>=6.7

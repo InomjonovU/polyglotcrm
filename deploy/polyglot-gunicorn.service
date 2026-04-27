@@ -1,0 +1,32 @@
+[Unit]
+Description=PolyglotLC Gunicorn (Django)
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=notify
+User=polyglot
+Group=polyglot
+WorkingDirectory=/opt/polyglot_crm/backend
+EnvironmentFile=/opt/polyglot_crm/backend/.env
+ExecStart=/opt/polyglot_crm/backend/venv/bin/gunicorn \
+    --workers 3 \
+    --threads 2 \
+    --timeout 60 \
+    --bind 127.0.0.1:8000 \
+    --access-logfile /var/log/polyglot/access.log \
+    --error-logfile /var/log/polyglot/error.log \
+    --log-level info \
+    config.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=5
+
+# Xavfsizlik
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

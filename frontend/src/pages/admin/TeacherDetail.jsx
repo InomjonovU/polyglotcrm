@@ -240,6 +240,7 @@ function EditTeacherForm({ teacher, onSubmit, loading }) {
     birth_date: teacher.birth_date || '',
     address: teacher.address || '',
     percent: teacher.percent || 30,
+    type: teacher.type || 'main',
     is_active: teacher.is_active,
   })
   return (
@@ -250,6 +251,13 @@ function EditTeacherForm({ teacher, onSubmit, loading }) {
       <div><label className="label">Tug'ilgan sana</label><input type="date" className="input" value={f.birth_date || ''} onChange={(e) => setF({ ...f, birth_date: e.target.value })} /></div>
       <div className="sm:col-span-2"><label className="label">Manzil</label><input className="input" value={f.address || ''} onChange={(e) => setF({ ...f, address: e.target.value })} /></div>
       <div><label className="label">Foiz (%)</label><input type="number" min="0" max="100" step="0.01" className="input" value={f.percent} onChange={(e) => setF({ ...f, percent: e.target.value })} required /></div>
+      <div>
+        <label className="label">O'qituvchi turi</label>
+        <select className="input" value={f.type} onChange={(e) => setF({ ...f, type: e.target.value })}>
+          <option value="main">Asosiy o'qituvchi</option>
+          <option value="support">Yordamchi o'qituvchi</option>
+        </select>
+      </div>
       <label className="flex items-center gap-2 mt-6">
         <input type="checkbox" checked={f.is_active} onChange={(e) => setF({ ...f, is_active: e.target.checked })} />
         <span className="text-sm">Faol o'qituvchi</span>

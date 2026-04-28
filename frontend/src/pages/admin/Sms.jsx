@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { MessageSquare, Send, FileText, History, Edit, Search } from 'lucide-react'
+import { Send, FileText, History, Edit, Trash2, Search, Plus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { api } from '../../api/client'
 import PageHeader from '../../components/PageHeader'
@@ -134,47 +134,82 @@ function TemplatesPanel() {
   const saveMut = useMutation({
     mutationFn: (body) => body.id ? api.patch(`/sms/templates/${body.id}/`, body) : api.post('/sms/templates/', body),
     onSuccess: () => { toast.success('Saqlandi'); qc.invalidateQueries({ queryKey: ['sms-templates'] }); setEditing(null) },
+    onError: (e) => toast.error(e.response?.data?.detail || 'Xatolik'),
   })
+
+  const deleteMut = useMutation({
+    mutationFn: (id) => api.delete(`/sms/templates/${id}/`),
+    onSuccess: () => { toast.success("O'chirildi"); qc.invalidateQueries({ queryKey: ['sms-templates'] }) },
+    onError: () => toast.error('Xatolik'),
+  })
+
+  const templates = data?.results || []
 
   return (
     <div>
       <div className="flex justify-end mb-3">
-        <button onClick={() => setEditing({ code: '', title: '', body: '' })} className="btn-primary">Yangi shablon</button>
+        <button onClick={() => setEditing({ code: '', name: '', body: '', is_active: true })} className="btn-primary">
+          <Plus className="w-4 h-4" /> Yangi shablon
+        </button>
       </div>
       <div className="grid md:grid-cols-2 gap-3">
-        {data?.results?.map(t => (
-          <div key={t.id} className="card hover:shadow-lift transition-shadow">
+        {templates.map(t => (
+          <div key={t.id} className={`card hover:shadow-lift transition-shadow ${!t.is_active ? 'opacity-50' : ''}`}>
             <div className="flex items-start justify-between gap-2 mb-2">
               <div>
                 <div className="text-xs text-brand-600 font-mono">{t.code}</div>
-                <h4 className="font-display font-semibold">{t.title}</h4>
+                <h4 className="font-display font-semibold">{t.name}</h4>
               </div>
-              <button onClick={() => setEditing(t)} className="p-1.5 hover:bg-ink-100 rounded">
-                <Edit className="w-4 h-4" />
-              </button>
+              <div className="flex gap-1">
+                <button onClick={() => setEditing(t)} className="p-1.5 hover:bg-ink-100 rounded">
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button onClick={() => { if (confirm("O'chirilsinmi?")) deleteMut.mutate(t.id) }} className="p-1.5 hover:bg-red-50 text-red-500 rounded">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             <div className="text-sm text-ink-600 whitespace-pre-wrap bg-ink-50 rounded-lg p-2">{t.body}</div>
+            {!t.is_active && <div className="text-xs text-ink-400 mt-2">Nofaol</div>}
           </div>
         ))}
+        {templates.length === 0 && (
+          <div className="col-span-2 text-center py-12 text-ink-500">Shablonlar yo'q. Yangi shablon qo'shing.</div>
+        )}
       </div>
 
-      <Modal open={!!editing} onClose={() => setEditing(null)} title="Shablon" size="lg">
+      <Modal open={!!editing} onClose={() => setEditing(null)} title={editing?.id ? 'Shablonni tahrirlash' : 'Yangi shablon'} size="lg">
         {editing && (
           <div className="space-y-3">
-            <div>
-              <label className="label">Kod</label>
-              <input className="input" value={editing.code} onChange={(e) => setEditing({ ...editing, code: e.target.value })} />
-            </div>
-            <div>
-              <label className="label">Sarlavha</label>
-              <input className="input" value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Kod <span className="text-ink-400 font-normal">(lotin, pastki chiziq)</span></label>
+                <input className="input font-mono" value={editing.code} placeholder="masalan: payment_reminder"
+                  onChange={(e) => setEditing({ ...editing, code: e.target.value })} />
+              </div>
+              <div>
+                <label className="label">Sarlavha</label>
+                <input className="input" value={editing.name} placeholder="To'lov eslatmasi"
+                  onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
+              </div>
             </div>
             <div>
               <label className="label">Matn</label>
-              <textarea rows={5} className="input" value={editing.body} onChange={(e) => setEditing({ ...editing, body: e.target.value })} />
-              <div className="text-xs text-ink-500 mt-1">{'{first_name}, {amount}, {month}'} kabi o'zgaruvchilar</div>
+              <textarea rows={5} className="input" value={editing.body}
+                placeholder="Assalomu alaykum, {first_name}! ..."
+                onChange={(e) => setEditing({ ...editing, body: e.target.value })} />
+              <div className="text-xs text-ink-500 mt-1 bg-ink-50 p-2 rounded-lg">
+                <b>O'zgaruvchilar:</b> {'{first_name}'} — ism, {'{last_name}'} — familiya, {'{amount}'} — summa, {'{month}'} — oy, {'{group}'} — guruh, {'{phone}'} — telefon, {'{center_name}'} — markaz nomi
+              </div>
             </div>
-            <button onClick={() => saveMut.mutate(editing)} className="btn-primary w-full">Saqlash</button>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={editing.is_active}
+                onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} />
+              <span className="text-sm">Faol shablon</span>
+            </label>
+            <button onClick={() => saveMut.mutate(editing)} disabled={saveMut.isPending} className="btn-primary w-full">
+              {saveMut.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
+            </button>
           </div>
         )}
       </Modal>
